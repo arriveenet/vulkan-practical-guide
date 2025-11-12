@@ -1,6 +1,6 @@
 #pragma once
 
-class ISample {
+class ISampleApp {
 public:
     virtual ~ISampleApp() = default;
     virtual void OnInitialize() = 0;

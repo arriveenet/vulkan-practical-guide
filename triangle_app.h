@@ -1,8 +1,7 @@
 #pragma once
 #include "ISampleApp.h"
 
-class TriangleApp : public ISampleApp
-{
+class TriangleApp : public ISampleApp {
 public:
     virtual void OnInitialize() override { };
     virtual void OnDrawFrame() override { };

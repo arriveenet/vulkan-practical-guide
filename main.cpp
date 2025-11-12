@@ -1,7 +1,7 @@
-#define GLFW_INCLUDE_VULKAN
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include "core/vulkan_context.h"
-#include "trinagle_app.h"
+#include "triangle_app.h"
 
 int main()
 {
@@ -12,6 +12,13 @@ int main()
     auto window = glfwCreateWindow(1280, 720, "HelloWindow", nullptr, nullptr);
 
     auto& vulkanCtx = VulkanContext::Get();
+    vulkanCtx.GetWindowSystemExtensions = [=](auto &extensionList) {
+        uint32_t extCount = 0;
+        const char **extensions = glfwGetRequiredInstanceExtensions(&extCount);
+        if (extensions > 0) {
+                extensionList.insert(extensionList.end(), extensions, extensions + extCount);
+            }
+        };
 
     TriangleApp theApp{};
     theApp.OnInitialize();
