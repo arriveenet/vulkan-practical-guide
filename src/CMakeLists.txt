@@ -3,6 +3,8 @@ project(Vulkan)
 
 set(TARGET Vulkan)
 
+find_package(Vulkan REQUIRED)
+
 set(HDRS
     core/command_buffer.h
     core/vulkan_context.h
@@ -26,4 +28,4 @@ set_target_properties(${TARGET} PROPERTIES
 
 target_include_directories(${TARGET} PUBLIC ./)
 
-target_link_libraries(${TARGET} PUBLIC glad)
+target_link_libraries(${TARGET} PRIVATE Vulkan::Vulkan)
