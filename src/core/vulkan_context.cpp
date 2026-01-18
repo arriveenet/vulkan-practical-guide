@@ -1,6 +1,17 @@
 #include "vulkan_context.h"
 #include <stdexcept>
 
+// Vulkanの構造体pNextを繋ぐ処理簡略化のためのテンプレート
+template <typename T> void BuildVkExtentionChain(T &last) {
+  last.pNext = nullptr;
+}
+
+template <typename T, typename U, typename... Rest>
+void BuildVkExtentionChain(T &current, U &next, Rest &...rest) {
+  current.pNext = &next;
+  BuildVkExtentionChain(next, rest...);
+}
+
 VulkanContext &VulkanContext::Get()
 {
     static VulkanContext instance;
@@ -26,6 +37,34 @@ std::shared_ptr<CommandBuffer> VulkanContext::CreateCommandBuffer() {
     return std::shared_ptr<CommandBuffer>();
 }
 
+VkDescriptorSet
+VulkanContext::AllocateDescriptorSet(VkDescriptorSetLayout layout) {
+  return VkDescriptorSet();
+}
+
+void VulkanContext::FreeDescriptorSet(VkDescriptorSet descriptorSet) {}
+
+VkResult VulkanContext::AcquireNextImage() { return VkResult(); }
+
+void VulkanContext::SubmitPresent() {}
+
+void VulkanContext::SubmitAndWait(
+    std::shared_ptr<CommandBuffer> commandBuffer) {}
+
+VulkanContext::FrameContext* VulkanContext::GetCurrentFrameContext()
+{
+    return nullptr;
+}
+
+uint32_t VulkanContext::FindMemoryType(const VkMemoryRequirements &requirements,
+                                       VkMemoryPropertyFlags properties) const {
+  return 0;
+}
+
+void VulkanContext::SetDebugObjectName(void* objectHandle, VkObjectType type, const char* name)
+{
+}
+
 void VulkanContext::CreateInstance(const char *appName) {
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -39,6 +78,13 @@ void VulkanContext::CreateInstance(const char *appName) {
     std::vector<const char *> layerList;
 
     GetWindowSystemExtensions(extensionList);
+
+#if DEBUG || _DEBUG
+    // デバッグ拡張を有効化
+    extensionList.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    // デバッグレイヤーを有効化
+    layerList.push_back("VK_LAYER_KHRONOS_validation");
+#endif
 
     VkInstanceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -90,12 +136,44 @@ void VulkanContext::CreateLogicalDevice() {
 
     BuildVkFeatures();
     std::vector<const char*> deviceExtensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     };
+
+    float priority = 1.0f;
+    VkDeviceQueueCreateInfo queueInfo{};
+    queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queueInfo.queueFamilyIndex = m_graphicsQueueFamilyIndex;
+    queueInfo.queueCount = 1;
+    queueInfo.pQueuePriorities = &priority;
+    VkDeviceCreateInfo deviceInfo{};
+    deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    deviceInfo.queueCreateInfoCount = 1;
+    deviceInfo.pQueueCreateInfos = &queueInfo;
+    deviceInfo.enabledExtensionCount =
+        static_cast<uint32_t>(deviceExtensions.size());
+    deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
+
+    deviceInfo.pNext = &m_physicalDevFeatures;
+    deviceInfo.pEnabledFeatures = nullptr; // VkPhysicalDeviceFeaturesは使わない
+
+    auto result = vkCreateDevice(m_vkPhysicalDevice, &deviceInfo, nullptr, &m_vkDevice);
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("failed to create logical device!");
+    }
+    vkGetDeviceQueue(m_vkDevice, m_graphicsQueueFamilyIndex, 0,
+                     &m_graphicsQueue);
 }
 
 void VulkanContext::CreateDebugMessenger() {}
 
-void VulkanContext::CreateCommandPool() {}
+void VulkanContext::CreateCommandPool() {
+    VkCommandPoolCreateInfo commandPoolCI{
+        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+    };
+    commandPoolCI.queueFamilyIndex = m_graphicsQueueFamilyIndex;
+    commandPoolCI.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    vkCreateCommandPool(m_vkDevice, &commandPoolCI, nullptr, &m_commandPool);
+}
 
 void VulkanContext::CreateDescriptorPool() {}
 
@@ -105,4 +183,15 @@ void VulkanContext::DestroyFrameContexts() {}
 
 void VulkanContext::AdvanceFrame() {}
 
-void VulkanContext::BuildVkFeatures() {}
+void VulkanContext::BuildVkFeatures(){
+    // デバイスからサポート範囲の情報を取得した後で、使いたいものを有効化する
+    // ここでサポートされていない機能を有効化にすると、デバイス作成時にエラーになる
+    BuildVkExtentionChain(m_physicalDevFeatures, m_vulkan11Features,
+                          m_vulkan12Features, m_vulkan13Features);
+    // サポート情報を取得
+    vkGetPhysicalDeviceFeatures2(m_vkPhysicalDevice, &m_physicalDevFeatures);
+
+    // 機能を有効化
+    m_vulkan13Features.dynamicRendering = VK_TRUE;
+    m_vulkan13Features.synchronization2 = VK_TRUE;
+}

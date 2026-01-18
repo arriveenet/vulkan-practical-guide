@@ -14,8 +14,8 @@ int main()
     auto& vulkanCtx = VulkanContext::Get();
     vulkanCtx.GetWindowSystemExtensions = [=](auto &extensionList) {
         uint32_t extCount = 0;
-        const char **extensions = glfwGetRequiredInstanceExtensions(&extCount);
-        if (extensions > 0) {
+        const char** extensions = glfwGetRequiredInstanceExtensions(&extCount);
+        if (extCount > 0) {
                 extensionList.insert(extensionList.end(), extensions, extensions + extCount);
             }
         };
