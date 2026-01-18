@@ -83,5 +83,15 @@ private:
     std::vector<FrameContext> m_frameContext;
     std::unique_ptr<Swapchain> m_swapchain{};
 
+    VkPhysicalDeviceFeatures2 m_physicalDevFeatures {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2
+    };
+    VkPhysicalDeviceVulkan11Features m_vulkan11Features {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES
+    };
+    VkPhysicalDeviceVulkan13Features m_vulkan13Features {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES
+    };
+
 };
 

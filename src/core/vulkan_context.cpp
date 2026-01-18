@@ -55,9 +55,43 @@ void VulkanContext::CreateInstance(const char *appName) {
 
 void VulkanContext::CreateSurface() {}
 
-void VulkanContext::PickPhysicalDevice() {}
+void VulkanContext::PickPhysicalDevice()
+{
+    uint32_t count = 0;
+    vkEnumeratePhysicalDevices(m_vkInstance, &count, nullptr);
+    std::vector<VkPhysicalDevice> devices(count);
+    vkEnumeratePhysicalDevices(m_vkInstance, &count, devices.data());
+    m_vkPhysicalDevice = devices[0];
 
-void VulkanContext::CreateLogicalDevice() {}
+    // 情報の取得
+    vkGetPhysicalDeviceMemoryProperties(m_vkPhysicalDevice,
+                                        &m_memoryProperties);
+    vkGetPhysicalDeviceProperties(m_vkPhysicalDevice,
+                                  &m_physicalDeviceProperties);
+}
+
+void VulkanContext::CreateLogicalDevice() {
+  // キューファミリのインデックスを取得
+  uint32_t queueCount = 0;
+  vkGetPhysicalDeviceQueueFamilyProperties(m_vkPhysicalDevice, &queueCount,
+                                           nullptr);
+  std::vector<VkQueueFamilyProperties> queues(queueCount);
+  vkGetPhysicalDeviceQueueFamilyProperties(m_vkPhysicalDevice, &queueCount,
+                                           queues.data());
+
+  m_graphicsQueueFamilyIndex = ~0u;
+  for (uint32_t i = 0; const auto &props : queues) {
+    if (props.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+      m_graphicsQueueFamilyIndex = i;
+      break;
+    }
+    ++i;
+  }
+
+    BuildVkFeatures();
+    std::vector<const char*> deviceExtensions = {
+    };
+}
 
 void VulkanContext::CreateDebugMessenger() {}
 
