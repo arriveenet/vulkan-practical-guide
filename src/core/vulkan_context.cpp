@@ -1,5 +1,10 @@
 #include "vulkan_context.h"
 #include <stdexcept>
+#include <sstream>
+#include <iostream>
+#if defined(WIN32)
+#   include <Windows.h>
+#endif
 
 // Vulkanの構造体pNextを繋ぐ処理簡略化のためのテンプレート
 template <typename T> void BuildVkExtentionChain(T &last) {
@@ -10,6 +15,22 @@ template <typename T, typename U, typename... Rest>
 void BuildVkExtentionChain(T &current, U &next, Rest &...rest) {
   current.pNext = &next;
   BuildVkExtentionChain(next, rest...);
+}
+
+VKAPI_ATTR VkBool32 VKAPI_CALL
+VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                    VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+                    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+{
+    std::stringstream ss;
+    ss << "[validation layer] " << pCallbackData->pMessage << std::endl;
+#if defined(WIN32)
+    OutputDebugStringA(ss.str().c_str());
+#else
+    std::cerr << ss;
+#endif
+
+    return VK_FALSE;
 }
 
 VulkanContext &VulkanContext::Get()
@@ -63,6 +84,16 @@ uint32_t VulkanContext::FindMemoryType(const VkMemoryRequirements &requirements,
 
 void VulkanContext::SetDebugObjectName(void* objectHandle, VkObjectType type, const char* name)
 {
+#if _DEBUG || DEBUG
+    if (m_pfnSetDebugUtilsObjectNameEXT) {
+        VkDebugUtilsObjectNameInfoEXT nameInfo{};
+        nameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        nameInfo.objectType = type;
+        nameInfo.objectHandle = reinterpret_cast<uint64_t>(objectHandle);
+        nameInfo.pObjectName = name;
+        m_pfnSetDebugUtilsObjectNameEXT(m_vkDevice, &nameInfo);
+    }
+#endif
 }
 
 void VulkanContext::CreateInstance(const char *appName) {
@@ -164,7 +195,27 @@ void VulkanContext::CreateLogicalDevice() {
                      &m_graphicsQueue);
 }
 
-void VulkanContext::CreateDebugMessenger() {}
+void VulkanContext::CreateDebugMessenger() {
+    VkDebugUtilsMessengerCreateInfoEXT createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                                 VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                                 VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                             VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                             VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    createInfo.pfnUserCallback = VulkanDebugCallback;
+
+    auto vkCreateDebugUtilsMessenger = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+        m_vkInstance, "vkCreateDebugUtilsMessengerEXT");
+
+    if (vkCreateDebugUtilsMessenger 
+        && vkCreateDebugUtilsMessenger(m_vkInstance, &createInfo, nullptr, &m_debugMessenger) != VK_SUCCESS) {
+        throw std::runtime_error("failed to set up debug messenger!");
+    }
+    m_pfnSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(
+        m_vkInstance, "vkSetDebugUtilsObjectNameEXT");
+}
 
 void VulkanContext::CreateCommandPool() {
     VkCommandPoolCreateInfo commandPoolCI{
