@@ -7,6 +7,7 @@ find_package(Vulkan REQUIRED)
 
 set(HDRS
     core/command_buffer.h
+    core/swapchain.h
     core/vulkan_context.h
     ISampleApp.h
     triangle_app.h
@@ -14,6 +15,7 @@ set(HDRS
 
 set(SRCS
     core/vulkan_context.cpp
+    core/swapchain.cpp
     main.cpp
 )
 

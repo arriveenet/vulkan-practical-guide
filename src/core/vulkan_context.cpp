@@ -1,4 +1,6 @@
 #include "vulkan_context.h"
+#include "swapchain.h"
+
 #include <stdexcept>
 #include <sstream>
 #include <iostream>
@@ -17,7 +19,7 @@ void BuildVkExtentionChain(T &current, U &next, Rest &...rest) {
   BuildVkExtentionChain(next, rest...);
 }
 
-VKAPI_ATTR VkBool32 VKAPI_CALL
+static VKAPI_ATTR VkBool32 VKAPI_CALL
 VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                     VkDebugUtilsMessageTypeFlagsEXT messageTypes,
                     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
@@ -32,6 +34,12 @@ VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 
     return VK_FALSE;
 }
+//
+//static VKAPI_ATTR VkResult VKAPI_CALL vkCreateFence(VkDevice device,
+//                                                    const VkFenceCreateInfo* pCreateInfo,
+//                                                    const VkAllocationCallbacks* pAllocator,
+//                                                    VkFence* pFence);
+
 
 VulkanContext &VulkanContext::Get()
 {
@@ -50,7 +58,9 @@ void VulkanContext::Initialize(const char *appName,
     CreateDescriptorPool(); // ディスクリプタプールの作成
 }
 
-void VulkanContext::Cleanup() {}
+void VulkanContext::Cleanup()
+{
+}
 
 void VulkanContext::RecreateSwapchain() {}
 
@@ -65,7 +75,10 @@ VulkanContext::AllocateDescriptorSet(VkDescriptorSetLayout layout) {
 
 void VulkanContext::FreeDescriptorSet(VkDescriptorSet descriptorSet) {}
 
-VkResult VulkanContext::AcquireNextImage() { return VkResult(); }
+VkResult VulkanContext::AcquireNextImage()
+{
+    return VkResult();
+}
 
 void VulkanContext::SubmitPresent() {}
 
