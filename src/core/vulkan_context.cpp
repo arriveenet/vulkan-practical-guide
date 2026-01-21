@@ -1,5 +1,6 @@
 #include "vulkan_context.h"
 #include "swapchain.h"
+#include "surface_provider.h"
 
 #include <stdexcept>
 #include <sstream>
@@ -143,7 +144,17 @@ void VulkanContext::CreateInstance(const char *appName) {
     }
 }
 
-void VulkanContext::CreateSurface() {}
+void VulkanContext::CreateSurface() {
+    m_surface = m_surfaceProvider->CreateSurface(m_vkInstance);
+
+    // プレゼンテーションサポートの確認
+    VkBool32 present = VK_FALSE;
+    vkGetPhysicalDeviceSurfaceSupportKHR(m_vkPhysicalDevice, m_graphicsQueueFamilyIndex, m_surface,
+                                         &present);
+    if (present == VK_FALSE) {
+        throw std::runtime_error("selected physical device does not support presentation!");
+    }
+}
 
 void VulkanContext::PickPhysicalDevice()
 {
