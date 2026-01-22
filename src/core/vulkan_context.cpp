@@ -63,9 +63,26 @@ void VulkanContext::Cleanup()
 {
 }
 
-void VulkanContext::RecreateSwapchain() {}
+void VulkanContext::RecreateSwapchain()
+{
+    if (m_swapchain == nullptr) {
+        m_swapchain = std::make_unique<Swapchain>();
+    }
 
-std::shared_ptr<CommandBuffer> VulkanContext::CreateCommandBuffer() {
+    if (m_surface == VK_NULL_HANDLE) {
+        CreateSurface();
+    }
+
+    auto width = m_surfaceProvider->GetFrameBufferWidth();
+    auto height = m_surfaceProvider->GetFrameBufferHeight();
+    m_swapchain->Recreate(width, height);
+
+    DestroyFrameContexts();
+    CreateFrameContexts();
+}
+
+std::shared_ptr<CommandBuffer> VulkanContext::CreateCommandBuffer()
+{
     return std::shared_ptr<CommandBuffer>();
 }
 

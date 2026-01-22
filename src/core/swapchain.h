@@ -7,7 +7,7 @@ class Swapchain {
 public:
     Swapchain() = default;
 
-    bool Recreate(uint32_t newWidth, uint32_t newHeight);
+    bool Recreate(uint32_t width, uint32_t height);
     void Cleanup();
 
     VkResult AcquireNextImage();
