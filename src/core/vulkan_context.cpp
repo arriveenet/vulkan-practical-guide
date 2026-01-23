@@ -31,7 +31,7 @@ VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 #if defined(WIN32)
     OutputDebugStringA(ss.str().c_str());
 #else
-    std::cerr << ss;
+    std::cerr << ss.str() << std::endl;
 #endif
 
     return VK_FALSE;
