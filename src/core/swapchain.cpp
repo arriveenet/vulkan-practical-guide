@@ -1,5 +1,6 @@
 #include "swapchain.h"
 #include <stdexcept>
+#include <assert.h>
 
 bool Swapchain::Recreate(uint32_t width, uint32_t height)
 {
@@ -98,25 +99,107 @@ bool Swapchain::Recreate(uint32_t width, uint32_t height)
     return true;
 }
 
+void Swapchain::Cleanup()
+{
+    auto& vulkanCtx = VulkanContext::Get();
+    auto vkDevice = vulkanCtx.GetVkDevice();
+    for (auto& view : m_imageViews) {
+        vkDestroyImageView(vkDevice, view, nullptr);
+    }
+    if (m_swapchain != VK_NULL_HANDLE) {
+        vkDestroySwapchainKHR(vkDevice, m_swapchain, nullptr);
+        m_swapchain = VK_NULL_HANDLE;
+    }
+    m_images.clear();
+    m_imageViews.clear();
+}
+
+VkResult Swapchain::AcquireNextImage()
+{
+    auto& vulkanCtx = VulkanContext::Get();
+    auto vkDevice = vulkanCtx.GetVkDevice();
+
+    // プレゼンテーション完了待ちで使用するセマフォの取得
+    assert(!m_presentSemaphoreList.empty());
+    VkSemaphore acquireSemaphore = m_presentSemaphoreList.back();
+    m_presentSemaphoreList.pop_back();
+
+    auto result = vkAcquireNextImageKHR(vkDevice, m_swapchain, UINT64_MAX, acquireSemaphore,
+                                        VK_NULL_HANDLE, &m_currentIndex);
+    if (result != VK_SUCCESS) {
+        m_presentSemaphoreList.push_back(acquireSemaphore);
+        return result;
+    }
+
+    // 前に使用していたものを置き換える
+    VkSemaphore oldSemaphore = m_frames[m_currentIndex].presentComplete;
+    if (oldSemaphore != VK_NULL_HANDLE) {
+        m_presentSemaphoreList.push_back(oldSemaphore);
+    }
+    m_frames[m_currentIndex].presentComplete = acquireSemaphore;
+    return result;
+}
+
 VkResult Swapchain::QueuePresent(VkQueue queuePresent)
 {
-    return VkResult();
+    VkPresentInfoKHR presentInfo{};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = &m_swapchain;
+    presentInfo.pImageIndices = &m_currentIndex;
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = &m_frames[m_currentIndex].renderComplete;
+
+    auto& vulkanCtx = VulkanContext::Get();
+    auto result = vkQueuePresentKHR(queuePresent, &presentInfo);
+    return result;
 }
 
 VkSemaphore Swapchain::GetPresentCompleteSemaphore() const
 {
-    return VkSemaphore();
+    return m_frames[m_currentIndex].presentComplete;
 }
 
 VkSemaphore Swapchain::GetRenderCompleteSemaphore() const
 {
-    return VkSemaphore();
+    return m_frames[m_currentIndex].renderComplete;
 }
 
 void Swapchain::CreateFrameContext()
 {
+    auto& vulkanCtx = VulkanContext::Get();
+    auto vkDevice = vulkanCtx.GetVkDevice();
+    m_frames.resize(m_images.size());
+    for (auto& frame : m_frames) {
+        VkSemaphoreCreateInfo semCI{
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+        };
+        vkCreateSemaphore(vkDevice, &semCI, nullptr, &frame.renderComplete);
+    }
+
+    uint32_t presentCompleteSemaphoreCount = m_images.size() + 1;
+    m_presentSemaphoreList.reserve(presentCompleteSemaphoreCount);
+    for (uint32_t i = 0; i < presentCompleteSemaphoreCount; ++i) {
+        VkSemaphoreCreateInfo semCI{
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+        };
+        VkSemaphore semaphore;
+        vkCreateSemaphore(vkDevice, &semCI, nullptr, &semaphore);
+        m_presentSemaphoreList.push_back(semaphore);
+    }
 }
 
 void Swapchain::DestroyFrameContext()
 {
+    auto& vulkanCtx = VulkanContext::Get();
+    auto vkDevice = vulkanCtx.GetVkDevice();
+    for (auto& frame : m_frames) {
+        vkDestroySemaphore(vkDevice, frame.presentComplete, nullptr);
+        vkDestroySemaphore(vkDevice, frame.renderComplete, nullptr);
+    }
+    m_frames.clear();
+    for (auto& sem : m_presentSemaphoreList) {
+        vkDestroySemaphore(vkDevice, sem, nullptr);
+    }
+    m_presentSemaphoreList.clear();
 }

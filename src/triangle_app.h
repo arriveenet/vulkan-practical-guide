@@ -3,8 +3,8 @@
 
 class TriangleApp : public ISampleApp {
 public:
-    virtual void OnInitialize() override { };
-    virtual void OnDrawFrame() override { };
-    virtual void OnCleanup() override { };
+    virtual void OnInitialize() override;
+    virtual void OnDrawFrame() override;
+    virtual void OnCleanup() override;
 };
 

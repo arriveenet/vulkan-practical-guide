@@ -1,6 +1,7 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include "core/vulkan_context.h"
+#include "core/glfw_surface_provider.h"
 #include "triangle_app.h"
 
 int main()
@@ -10,15 +11,18 @@ int main()
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
     auto window = glfwCreateWindow(1280, 720, "HelloWindow", nullptr, nullptr);
+    GLFWSurfaceProvider surfaceProvider{window};
 
     auto& vulkanCtx = VulkanContext::Get();
-    vulkanCtx.GetWindowSystemExtensions = [=](auto &extensionList) {
+    vulkanCtx.GetWindowSystemExtensions = [=](auto& extensionList) {
         uint32_t extCount = 0;
         const char** extensions = glfwGetRequiredInstanceExtensions(&extCount);
         if (extCount > 0) {
-                extensionList.insert(extensionList.end(), extensions, extensions + extCount);
-            }
-        };
+            extensionList.insert(extensionList.end(), extensions, extensions + extCount);
+        }
+    };
+    vulkanCtx.Initialize("Triangle", &surfaceProvider);
+    vulkanCtx.RecreateSwapchain();
 
     TriangleApp theApp{};
     theApp.OnInitialize();

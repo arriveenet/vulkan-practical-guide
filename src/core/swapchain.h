@@ -20,7 +20,7 @@ public:
     uint32_t GetCurrentIndex() const { return m_currentIndex; }
     uint32_t GetImageCount() const { return static_cast<uint32_t>(m_images.size()); }
     VkImage GetCurrentImage() const { return m_images[m_currentIndex]; }
-    VkImageView GetImageView() const { return m_imageViews[m_currentIndex]; }
+    VkImageView GetCurrentView() const { return m_imageViews[m_currentIndex]; }
 
     VkSemaphore GetPresentCompleteSemaphore() const;
     VkSemaphore GetRenderCompleteSemaphore() const;

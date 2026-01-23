@@ -8,6 +8,7 @@ find_package(Vulkan REQUIRED)
 set(HDRS
     core/command_buffer.h
     core/glfw_surface_provider.h
+    core/image_barrier.h
     core/swapchain.h
     core/surface_provider.h
     core/vulkan_context.h
@@ -16,9 +17,12 @@ set(HDRS
 )
 
 set(SRCS
+    core/command_buffer.cpp
     core/glfw_surface_provider.cpp
+    core/image_barrier.cpp
     core/vulkan_context.cpp
     core/swapchain.cpp
+    triangle_app.cpp
     main.cpp
 )
 
