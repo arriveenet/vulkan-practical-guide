@@ -5,6 +5,8 @@
 
 void TriangleApp::OnInitialize()
 {
+    InitializeTriangleVertexBuffer();
+    InitializeGraphicsPipeline();
 }
 
 void TriangleApp::OnDrawFrame()
@@ -66,5 +68,27 @@ void TriangleApp::OnDrawFrame()
 }
 
 void TriangleApp::OnCleanup()
+{
+    auto& vulkanCtx = VulkanContext::Get();
+    auto device = vulkanCtx.GetVkDevice();
+
+    vkDeviceWaitIdle(device);
+    if (m_pipeline != VK_NULL_HANDLE) {
+        vkDestroyPipeline(device, m_pipeline, nullptr);
+        m_pipeline = VK_NULL_HANDLE;
+    }
+    if (m_pipelineLayout != VK_NULL_HANDLE) {
+        vkDestroyPipelineLayout(device, m_pipelineLayout, nullptr);
+        m_pipelineLayout = VK_NULL_HANDLE;
+    }
+    m_vertexBuffer->Creanup();
+    m_vertexBuffer.reset();
+}
+
+void TriangleApp::InitializeTriangleVertexBuffer()
+{
+}
+
+void TriangleApp::InitializeGraphicsPipeline()
 {
 }

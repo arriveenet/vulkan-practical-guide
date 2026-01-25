@@ -182,7 +182,18 @@ VulkanContext::FrameContext* VulkanContext::GetCurrentFrameContext()
 }
 
 uint32_t VulkanContext::FindMemoryType(const VkMemoryRequirements &requirements,
-                                       VkMemoryPropertyFlags properties) const {
+                                       VkMemoryPropertyFlags properties) const
+{
+    for (uint32_t i = 0; i < m_memoryProperties.memoryTypeCount; i++) {
+        const bool isTypeCompatible = (requirements.memoryTypeBits & (1 << i)) != 0;
+        const bool hasDesiredProperties =
+            (m_memoryProperties.memoryTypes[i].propertyFlags & properties) == properties;
+        if (isTypeCompatible && hasDesiredProperties) {
+            // Memory Type found
+            return i;
+        }
+    }
+    throw std::runtime_error("failed to find suitable memory type!");
   return 0;
 }
 
