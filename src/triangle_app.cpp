@@ -87,6 +87,17 @@ void TriangleApp::OnCleanup()
 
 void TriangleApp::InitializeTriangleVertexBuffer()
 {
+    const std::vector<Vertex> triangleVertices = {
+        {{0.0f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}}, // 下頂点（赤）
+        {{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},  // 右頂点（緑）
+        {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}}, // 左頂点（青）
+    };
+    VkDeviceSize bufferSize = sizeof(Vertex) * triangleVertices.size();
+    m_vertexBuffer = VertexBuffer::Create(bufferSize, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    void* p = m_vertexBuffer->Map();
+    memcpy(p, triangleVertices.data(), static_cast<size_t>(bufferSize));
+    m_vertexBuffer->Unmap();
 }
 
 void TriangleApp::InitializeGraphicsPipeline()

@@ -73,21 +73,3 @@ public:
     }
 
 };
-
-template <typename T>
-inline void BufferResource<T>::Creanup()
-{
-}
-
-template <typename T>
-inline VkDescriptorBufferInfo BufferResource<T>::GetDescriptorInfo() const
-{
-    return VkDescriptorBufferInfo();
-}
-
-template <typename T>
-inline bool BufferResource<T>::CreateBuffer(const VkBufferCreateInfo& createInfo,
-                                            VkMemoryPropertyFlags memProps)
-{
-    return false;
-}
