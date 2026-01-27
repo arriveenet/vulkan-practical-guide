@@ -6,7 +6,10 @@ set(TARGET Vulkan)
 find_package(Vulkan REQUIRED)
 
 set(HDRS
+    core/asset_path.h
+    core/buffer_resource.h
     core/command_buffer.h
+    core/gpu_resource_base.h
     core/glfw_surface_provider.h
     core/image_barrier.h
     core/swapchain.h
@@ -17,6 +20,8 @@ set(HDRS
 )
 
 set(SRCS
+    core/asset_path.cpp
+    core/buffer_resource.cpp
     core/command_buffer.cpp
     core/glfw_surface_provider.cpp
     core/image_barrier.cpp

@@ -1,4 +1,4 @@
-#include "buffer_resource.h"
+#include "core/buffer_resource.h"
 
 template <typename T>
 void BufferResource<T>::Creanup()
@@ -20,7 +20,11 @@ void BufferResource<T>::Creanup()
 template <typename T>
 VkDescriptorBufferInfo BufferResource<T>::GetDescriptorInfo() const
 {
-    return VkDescriptorBufferInfo{.buffer = m_buffer, .offset = 0, .range = m_size};
+    return VkDescriptorBufferInfo{
+            .buffer = m_buffer,
+            .offset = 0,
+            .range = m_size
+    };
 }
 
 template <typename T>
@@ -84,3 +88,5 @@ void VertexBuffer::Unmap()
         return;
     vkUnmapMemory(VulkanContext::Get().GetVkDevice(), m_memory);
 }
+
+template class BufferResource<VertexBuffer>;
