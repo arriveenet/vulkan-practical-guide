@@ -27,6 +27,7 @@ set(HDRS
     core/image_barrier.h
     core/swapchain.h
     core/surface_provider.h
+    core/shader_loader.h
     core/vulkan_context.h
     ISampleApp.h
     triangle_app.h
@@ -40,6 +41,7 @@ set(SRCS
     core/image_barrier.cpp
     core/vulkan_context.cpp
     core/swapchain.cpp
+    core/shader_loader.cpp
     triangle_app.cpp
     main.cpp
 )
