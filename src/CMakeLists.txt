@@ -24,6 +24,7 @@ set(HDRS
     core/command_buffer.h
     core/gpu_resource_base.h
     core/glfw_surface_provider.h
+    core/graphics_pipeline_builder.h
     core/image_barrier.h
     core/swapchain.h
     core/surface_provider.h
@@ -38,6 +39,7 @@ set(SRCS
     core/buffer_resource.cpp
     core/command_buffer.cpp
     core/glfw_surface_provider.cpp
+    core/graphics_pipeline_builder.cpp
     core/image_barrier.cpp
     core/vulkan_context.cpp
     core/swapchain.cpp
