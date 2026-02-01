@@ -103,6 +103,8 @@ void Swapchain::Cleanup()
 {
     auto& vulkanCtx = VulkanContext::Get();
     auto vkDevice = vulkanCtx.GetVkDevice();
+    DestroyFrameContext();
+
     for (auto& view : m_imageViews) {
         vkDestroyImageView(vkDevice, view, nullptr);
     }
