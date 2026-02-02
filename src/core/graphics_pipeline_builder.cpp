@@ -118,10 +118,20 @@ GraphicsPipelineBuilder& GraphicsPipelineBuilder::SetViewport(VkExtent2D extent)
         .maxDepth = 1.0f,
     };
 
+     // VK_KHR_Maintenance1 Ç…ÇÊÇÈè„â∫îΩì]
+    m_viewport.y = float(extent.height);
+    m_viewport.height = -float(extent.height);
+
     m_scissor = VkRect2D{
         .offset = {0, 0},
         .extent = extent,
     };
+
+    m_viewportState = {.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+                    .viewportCount = 1,
+                    .pViewports = &m_viewport,
+                    .scissorCount = 1,
+                    .pScissors = &m_scissor};
 
     return *this;
 }
@@ -131,6 +141,11 @@ GraphicsPipelineBuilder& GraphicsPipelineBuilder::setViewport(const VkViewport& 
 {
     m_viewport = viewport;
     m_scissor = scisor;
+    m_viewportState = {.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+                       .viewportCount = 1,
+                       .pViewports = &m_viewport,
+                       .scissorCount = 1,
+                       .pScissors = &m_scissor};
 
     return *this;
 }
@@ -173,39 +188,56 @@ GraphicsPipelineBuilder& GraphicsPipelineBuilder::UseRenderPass(VkRenderPass ren
 GraphicsPipelineBuilder& GraphicsPipelineBuilder::UseDynamicRendering(VkFormat colorFormat,
                                                                       VkFormat depthFormat)
 {
+    m_useRenderPass = false;
     m_colorFormat = colorFormat;
     m_depthFormat = depthFormat;
-    m_useRenderPass = false;
 
     return *this;
 }
 
 VkPipeline GraphicsPipelineBuilder::Build()
 {
-    VkGraphicsPipelineCreateInfo graphicsPipelineInfo{
+    VkGraphicsPipelineCreateInfo pipelineInfo{
         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        .pNext = nullptr,
-        .flags = 0,
         .stageCount = static_cast<uint32_t>(m_shaderStages.size()),
         .pStages = m_shaderStages.data(),
         .pVertexInputState = &m_vertexInputInfo,
         .pInputAssemblyState = &m_inputAssemblyState,
-        .pTessellationState = m_tessellationEnabled ? &m_tessellationState : nullptr,
         .pViewportState = &m_viewportState,
         .pRasterizationState = &m_rasterizationState,
         .pMultisampleState = &m_multisampleState,
         .pDepthStencilState = &m_depthStencilState,
         .pColorBlendState = &m_colorBlendState,
-        .pDynamicState = nullptr,
         .layout = m_pipelineLayout,
-        .renderPass = m_useRenderPass ? m_renderPass : VK_NULL_HANDLE,
-        .subpass = m_useRenderPass ? m_subpass : 0,
-        .basePipelineHandle = VK_NULL_HANDLE,
-        .basePipelineIndex = -1,
     };
 
-    VkPipeline pipeline{};
-    vkCreateGraphicsPipelines(m_device, nullptr, 1, &graphicsPipelineInfo, nullptr, &pipeline);
+    VkPipelineRenderingCreateInfo renderingInfo{};
+    if (m_useRenderPass) {
+        pipelineInfo.renderPass = m_renderPass;
+        pipelineInfo.subpass = m_subpass;
+    }
+    else {
+        renderingInfo = VkPipelineRenderingCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+            .colorAttachmentCount = 1,
+            .pColorAttachmentFormats = &m_colorFormat,
+            .depthAttachmentFormat = m_depthFormat,
+        };
+        pipelineInfo.pNext = &renderingInfo;
+        pipelineInfo.renderPass = VK_NULL_HANDLE;
+        pipelineInfo.subpass = 0;
+    }
+
+    if (m_tessellationEnabled) {
+        pipelineInfo.pTessellationState = &m_tessellationState;
+    }
+
+    auto& vulkanCtx = VulkanContext::Get();
+    VkPipeline pipeline = VK_NULL_HANDLE;
+    if (vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) !=
+        VK_SUCCESS) {
+        return VK_NULL_HANDLE;
+    }
 
     return pipeline;
 }
