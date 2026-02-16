@@ -1,0 +1,44 @@
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
+#include "core/vulkan_context.h"
+#include "core/glfw_surface_provider.h"
+#include "simple_cube_app.h"
+
+int main()
+{
+    glfwInit();
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+    auto window = glfwCreateWindow(1280, 720, "HelloWindow", nullptr, nullptr);
+    GLFWSurfaceProvider surfaceProvider{window};
+
+    auto& vulkanCtx = VulkanContext::Get();
+    vulkanCtx.GetWindowSystemExtensions = [=](auto& extensionList) {
+        uint32_t extCount = 0;
+        const char** extensions = glfwGetRequiredInstanceExtensions(&extCount);
+        if (extCount > 0) {
+            extensionList.insert(extensionList.end(), extensions, extensions + extCount);
+        }
+    };
+    vulkanCtx.Initialize("SimpleCube", &surfaceProvider);
+    vulkanCtx.RecreateSwapchain();
+
+    SimpleCubeApp theApp{};
+    theApp.OnInitialize();
+
+    while (glfwWindowShouldClose(window) == GLFW_FALSE)
+    {
+        glfwPollEvents();
+
+        theApp.OnDrawFrame();
+    }
+
+    theApp.OnCleanup();
+    vulkanCtx.Cleanup();
+
+    glfwDestroyWindow(window);
+    glfwTerminate();
+    return 0;
+}
+
