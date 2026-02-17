@@ -73,3 +73,26 @@ public:
     }
 
 };
+
+class StagingBuffer : public BufferResource<StagingBuffer> {
+    friend class GpuResourceBase<StagingBuffer>;
+private:
+    StagingBuffer() = default;
+
+public:
+    virtual ~StagingBuffer() = default;
+
+    virtual void* Map() override;
+    virtual void Unmap() override;
+
+    bool Initialize(VkDeviceSize size);
+
+    static std::shared_ptr<StagingBuffer> Create(VkDeviceSize size)
+    {
+        auto buffer = GpuResourceBase::Create();
+        if (!buffer->Initialize(size)) {
+            return nullptr;
+        }
+        return buffer;
+    }
+};
